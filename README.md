@@ -129,7 +129,7 @@ Internally, this is translated to:
 
 Finally, key-value blocks can also be written using curly brackets: `{` and `}`. For example, this is how the function macro could be invoked:
 
-    fn [x, y] { x + y }
+    function([x, y]){ x + y }
 
 There is one fundamental difference between using `do`/`end` and `{`'/`}` as key-value blocks delimiters. When used in method calls without parenthesis, `do`/`end` always applies to the furthest method call. For instance:
 
@@ -150,6 +150,24 @@ However, `{`/`}` binds to the closest one:
 Which is the same as:
 
     foo(bar { some_call })
+
+### Functions
+
+This specs defines two macros for blocks: `function` and `fn`. The former uses the array syntax for its arguments (similar to `def`) while the latter is a shortcut syntax. Here are some examples wrapping up the possible keyword syntaxes we have seen so far:
+
+    fn(a, b) { a + b }
+    fn(a, b, do: a + b)
+    fn a, b, do: a + b
+    fn a, b do
+      a + b
+    end
+
+    function([a,b]){ a + b }
+    function([a,b], do: a + b)
+    function [a,b], do: a + b
+    function [a,b] do
+      a + b
+    end
 
 ### Wrapping up
 
