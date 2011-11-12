@@ -127,7 +127,11 @@ Internally, this is translated to:
 
     case(some_var, do: (), match: [(0), (1; puts "is one"), (2; puts "is two")], else: (puts "none of above"))
 
-When used in method calls without parenthesis, `do`/`end` always applies to the furthest method call. For instance:
+Finally, key-value blocks can also be written using curly brackets: `{` and `}`. For example, this is how the function macro could be invoked:
+
+    fn [x, y] { x + y }
+
+There is one fundamental difference between using `do`/`end` and `{`'/`}` as key-value blocks delimiters. When used in method calls without parenthesis, `do`/`end` always applies to the furthest method call. For instance:
 
     foo bar do
       some_call
@@ -138,6 +142,14 @@ It the same as:
     foo(bar) do
       some_call
     end
+
+However, `{`/`}` binds to the closest one:
+
+    foo bar { some_call }
+
+Which is the same as:
+
+    foo(bar { some_call })
 
 ### Wrapping up
 
