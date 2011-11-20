@@ -6,28 +6,28 @@ Authors: José Valim, Yehuda Katz
 
 This proposal outlines the grammar for the Lego kernel language. The Lego kernel language is a minimal specification that provides a very simple but elegant syntax in order to work as building blocks for other languages. It provides operator and container tables in order to allow different languages built on top of Lego to provide significantly different features and syntax.
 
-## Syntax
+# Syntax
 
-The Lego language is made of three elements: macros, functions and key-value args (besides few literals). Here is how we can define a method that sums two variables:
+The Lego language is made of three elements: macros, functions and key-value args (besides few literals). Here is how we can define a function that sums two variables:
 
     def(sum: [a, b], do: +(a, b))
 
 In this example, we are calling the macro `def` passing two key-value args, `sum` with value [a, b] and `do` with an expression. We may expand the `do` into a series of expressions. For that, we use additional parenthesis:
 
     def(math: [a, b], do: (
-      =(c, a + b)
+      =(c, +(a, b))
       *(c, *(a, b))
     ))
 
 For instance, `if/else` clauses could be implemented as:
 
     if(some_variable, do: (
-      invoke_some_method()
+      invoke_some_function()
     ), else: (
       done()
     ))
 
-Similarly, a function that sums to numbers is defined as:
+Similarly, a function that sums two numbers is defined as:
 
     fn(a, b, do: (
       +(a, b)
@@ -35,20 +35,24 @@ Similarly, a function that sums to numbers is defined as:
 
 Finally, Lego also allows `;` to separate several expressions in the same line:
 
-    def(math: [a, b], do: (=(c, a + b); *(c, *(a, b))))
+    def(math: [a, b], do: (=(c, +(a, b)); *(c, *(a, b))))
 
-This is the basic specification of the language So far, there are just four characters reserved by the language: `,`, `(`, `)`, `:` and `;`.
+This is the basic specification of the language. So far, there are just five characters reserved by the language: `,` `(` `)` `:` `;`
 
 ## Getting rid of the parenthesis
 
-The Lego kernel language provides several conveniences to get rid of parenthesis. Let's take a look.
+The Lego kernel language provides several conveniences to get rid of parenthesis:
+
+* Operators;
+* Optional parenthesis;
+* Key-value blocks.
 
 ### Operators
 
-Lego will provide operators and an operator table. For instance, the following example (already shown above):
+Lego provides operators and an operator table. For instance, the following example (already shown above):
 
     def(math: [a, b], do: (
-      =(c, a + b)
+      =(c, +(a, b))
       *(c, *(a, b))
     ))
 
@@ -61,14 +65,14 @@ Could be rewritten as:
 
 Lego operator table will be able to handle unary, binary and ternary operators. All entries in the operator table have a precedence associated to them. A language built on top of Lego may optionally expose the operator table to developers so they can add their own operators at runtime (similar to the io language).
 
-Notice that an operator is not limited to only symbols. If a language wishes, `div` could be defined as a binary operator in the operator table. An example would be to implement guards in the syntax proposed so far:
+Notice that an operator is not limited to only symbols. If a language wishes, `div` could be defined as a binary operator in the operator table. A practical example are guards, which could be implemented as:
 
     def(math: [a, b] when is_number(a) and is_number(b), do: (
       c = a + b
       c * a * b
     ))
 
-The example above could be implemented by defining `when` as operator and assigning a high precedence to it.
+The example above could be implemented by defining `when` as a binary operator and assigning a low precedence to it.
 
 ### Optional parenthesis on macro/function calls
 
@@ -78,6 +82,34 @@ The second convenience provided by Lego are optional parenthesis on macro/functi
       c = a + b
       c * a * b
     )
+
+#### Solving optional parenthesis and operators ambiguity
+
+If an operator can be used on both unary and binary forms and the language also allows optional parenthesis, the language will have some ambiguity. Here are some non-ambiguous examples:
+
+    some_function() + 1
+    some_function(+1)
+
+If we remove parenthesis, the parser no longer knows how to handle both expressions without adding an special case:
+
+    some_function + 1
+    some_function +1
+    some_function+1
+
+To solve this problem, this specification defines that those three forms above translate respectively to:
+
+    some_function() + 1
+    some_function(+1)
+    some_function() + 1
+
+In general, white-space should be ignored by Lego implementations, except in the scenario above where white-space must be used to remove ambiguity. This follows the same rules as the Ruby programming language parser.
+
+Finally, it is important to notice that, once an operator is added to the operator table, operator function calls require explicit parenthesis. For instance, both of these expressions are valid:
+
+    +(1, 2)
+    1 + 2
+
+But `+ 1, 2` isn't.
 
 ### Key-value blocks
 
@@ -98,7 +130,7 @@ Everything marked by the newly introduced `do`/`end` keywords is passed as value
 Key-value blocks become more useful when we add other keywords to the block. For example, our `if`/`else` example already shown above:
 
     if(some_variable, do: (
-      invoke_some_method()
+      invoke_some_function()
     ), else: (
       done()
     ))
@@ -106,12 +138,12 @@ Key-value blocks become more useful when we add other keywords to the block. For
 Could now be rewritten as:
 
     if some_variable do
-      invoke_some_method
+      invoke_some_function
     else:
       done
     end
 
-There two other features provided syntactically by key-value blocks. The first one is the ability to handle empty expressions. The second allows them to work as accumulators to duplicated key blocks. This is convenient to implement `case`/`match` (also known as `switch`/`case` and `case`/`when` in other languages):
+There two other features provided syntactically by key-value blocks. The first one is the ability to handle empty expressions. The second allows them to work as accumulators to duplicated key blocks. These are convenient to implement `case`/`match` (also known as `switch`/`case` and `case`/`when` in other languages):
 
     case some_var do
     match: 0
@@ -127,17 +159,17 @@ Internally, this is translated to:
 
     case(some_var, do: (), match: [(0), (1; puts "is one"), (2; puts "is two")], else: (puts "none of above"))
 
-Finally, key-value blocks can also be written using curly brackets: `{` and `}`. For example, this is how the function macro could be invoked:
+Finally, key-value blocks also have a shorter version via curly brackets: `{` and `}`. For example, this is how the `function` macro could be invoked:
 
     function([x, y]){ x + y }
 
-There is one fundamental difference between using `do`/`end` and `{`'/`}` as key-value blocks delimiters. When used in method calls without parenthesis, `do`/`end` always applies to the furthest method call. For instance:
+There is one fundamental difference between using `do`/`end` and `{`'/`}` as key-value blocks delimiters. When used in function calls without parenthesis, `do`/`end` always applies to the furthest function call. For instance:
 
     foo bar do
       some_call
     end
 
-It the same as:
+It is the same as:
 
     foo(bar) do
       some_call
@@ -151,39 +183,20 @@ Which is the same as:
 
     foo(bar { some_call })
 
-### Functions
+## Data types
 
-This specs defines two macros for blocks: `function` and `fn`. The former uses the array syntax for its arguments (similar to `def`) while the latter is a shortcut syntax. Here are some examples wrapping up the possible keyword syntaxes we have seen so far:
+This section specifies a syntax mechanism for the implementation of custom data types besides literals.
 
-    fn(a, b) { a + b }
-    fn(a, b, do: a + b)
-    fn a, b, do: a + b
-    fn a, b do
-      a + b
-    end
-
-    function([a,b]){ a + b }
-    function([a,b], do: a + b)
-    function [a,b], do: a + b
-    function [a,b] do
-      a + b
-    end
-
-### Wrapping up
-
-So far, we have detailed the kernel of the language and introduced conveniences. With the macro mechanism, we were able to avoid defining several keywords and with a few syntax additions, the language looks pleasant and flexible to work with.
-
-The keywords are limited to: `,`, `(`, `)`, `:`, `;`, `do`, `end`, `{` and `}`.
-
-## Literals
+### Literals
 
 The following are literals in Lego:
 
     :atom
     1
     2.0
+    100_000
 
-## Containers
+### Containers
 
 In order to support the definition of other data types, Lego provides the concept of containers. A container uses two delimiters to mark the contained elements. For instance, here is how a list or an array could be defined (as in the examples above):
 
@@ -208,18 +221,99 @@ Since those are simply a macro/function call, we could implement Ruby like hashe
 
 Notice that, even though the Lego kernel language uses curly brackets for key-value blocks, they can also be used as containers. For that, it is important to take into account the following:
 
-    some_method { foo }
+    some_function { foo }
 
 In the example above, is { foo } a key-value blocks or a container with foo? The proper answer is the former. In order to obtain the latter, explicit parenthesis would be required:
 
-    some_method({ foo })
+    some_function({ foo })
 
 Lego will provide a container table where containers could be specified. Due to conflicts, a container cannot use delimiters that are also in the operators table.
 
-## Macros
+#### Solving optional parenthesis and containers ambiguity
+
+If a language choses to implement an operator using curly braces, some ambiguity may appear with key-value blocks. For instance, imagine that for a given language curly brackets also represents a tuple. The following are ambiguous:
+
+    function_call { }
+    function_call { 1 + 2 }
+
+It is impossible to know if those should be translated to:
+
+    function_call do: ()
+    function_call do: 1 + 2
+
+Or:
+
+    function_call({})
+    function_call({ 1 + 2 })
+
+Therefore, the Lego specifies that it must translate to the first form. If the developer desires the second form, it could be added by the explicit use of parenthesis.
+
+Finally, note that such ambiguity can be handled accordingly by the language implementation to be uncommon. For example, it rarely makes sense to create a tuple (a contiguous space in memory) with less than two elements, so although the conflict exists in theory, it should not appear in practice. On the other hand, if a language chooses curly brackets to represent lists or arrays, the same cannot be said and ambiguity scenarios can be more frequent, making the language implementation less convenient to use.
+
+## Parenthesis applicability
+
+In Lego, parenthesis may apply to any expression although their behavior may be or not supported by the language. For instance, a language could treat all expressions as functions, therefore all those should be valid syntactically:
+
+    1(2)
+    [1,2,3](0)
+    function([1,2,3])
+
+However, since many of those cases do not allow optional parenthesis due to ambiguity, the use of such expressions is discouraged. Instead, Lego suggests the applicability of parenthesis to be limited only to:
+
+* Operator/containers calls: `+(1, 2)` and `[](1, 2, 3)`
+* Functions calls: `sum(1, 2, 3)`
+* Dot expressions: `foo.bar(1, 2, 3)`
+
+Therefore, Lego reserves the dot `.` as a binary operator in which the final expression allows parenthesis to be applied. In the syntax tree, the last example translates directly to:
+
+    .(foo, bar)(1, 2, 3)
+
+The semantics of the dot operator (if it is a namespace operator or a function call on object oriented languages) should be defined by the language implementation.
+
+## Wrapping up
+
+So far, we have detailed the syntax of the language and introduced conveniences. With the macro mechanism, we were able to avoid defining several keywords and with a few syntax additions, the language looks pleasant and flexible to work with.
+
+The keywords are limited to: `,` `.` `(` `)` `:` `;` `do` `end` `{` `}`
+
+# Macros
+
+This section outlines some macros that must be shared across different Lego implementations.
+
+## Functions
+
+This specs defines two macros for blocks: `function` and `fn`. The former uses the array syntax for its arguments (similar to `def`) while the latter is a shortcut syntax. Here are some examples wrapping up the possible keyword syntaxes we have seen so far:
+
+    fn(a, b) { a + b }
+    fn(a, b, do: a + b)
+    fn a, b, do: a + b
+    fn a, b do
+      a + b
+    end
+
+    function([a,b]){ a + b }
+    function([a,b], do: a + b)
+    function [a,b], do: a + b
+    function [a,b] do
+      a + b
+    end
+
+# BNF grammar sample
 
 TODO
 
-## BNF grammar sample
+## Invalid syntax examples
 
-TODO
+In this section, we are going to describe some examples that are invalid code according to this specification.
+
+### Wrong usage of parenthesis
+
+In Lego, parenthesis are used for grouping expressions or doing calls (read Parenthesis applicability section above). Any other usage of parenthesis is invalid. For example, this common syntax for functions is invalid:
+
+    `(a, b) -> (a + b)`
+
+The reason is that `(a, b)` is supposed to apply to an expression, but it actually doesn't apply to anything. The same happens in this syntax:
+
+    `some_lambda.(a, b)`
+
+`.` is a binary operator and `(a, b)` is not a valid expression on its own, as it always needs to apply to something.
