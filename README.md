@@ -258,23 +258,29 @@ In Lego, parenthesis may apply to any expression although their behavior may be 
     [1,2,3](0)
     function([1,2,3])
 
-However, since many of those cases do not allow optional parenthesis due to ambiguity, the use of such expressions is discouraged. Instead, Lego suggests the applicability of parenthesis to be limited only to:
+A language may also allow parenthesis to be applied to an special operator. For instance, imagine a implementation where `.` is a binary operator:
 
-* Operator/containers calls: `+(1, 2)` and `[](1, 2, 3)`
-* Functions calls: `sum(1, 2, 3)`
-* Dot expressions: `foo.bar(1, 2, 3)`
+    foo.bar(1, 2)
 
-Therefore, Lego reserves the dot `.` as a binary operator in which the final expression allows parenthesis to be applied. In the syntax tree, the last example translates directly to:
+This example would translate to the form below, which in a language like Ruby would mean method dispatching:
 
-    .(foo, bar)(1, 2, 3)
+    .(foo, bar)(1, 2)
 
-The semantics of the dot operator (if it is a namespace operator or a function call on object oriented languages) should be defined by the language implementation.
+Besides, Lego also supports parenthesis to be applied as in the expression below:
+
+    foo.(1,2)
+
+Such example would translate to:
+
+    .(foo)(1,2)
+
+Which has similar translation as a unary operator.
 
 ## Wrapping up
 
 So far, we have detailed the syntax of the language and introduced conveniences. With the macro mechanism, we were able to avoid defining several keywords and with a few syntax additions, the language looks pleasant and flexible to work with.
 
-The keywords are limited to: `,` `.` `(` `)` `:` `;` `do` `end` `{` `}`
+The keywords are limited to: `,` `(` `)` `:` `;` `do` `end` `{` `}`
 
 # Macros
 
@@ -312,8 +318,4 @@ In Lego, parenthesis are used for grouping expressions or doing calls (read Pare
 
     `(a, b) -> (a + b)`
 
-The reason is that `(a, b)` is supposed to apply to an expression, but it actually doesn't apply to anything. The same happens in this syntax:
-
-    `some_lambda.(a, b)`
-
-`.` is a binary operator and `(a, b)` is not a valid expression on its own, as it always needs to apply to something.
+The reason is that `(a, b)` is supposed to apply to an expression, but it actually doesn't apply to anything.
