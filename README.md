@@ -10,11 +10,11 @@ This proposal outlines the grammar for the Lego kernel language. The Lego kernel
 
 The Lego language is made of three elements: macros, functions and key-value args (besides few literals). Here is how we can define a function that sums two variables:
 
-    def(sum: [a, b], do: +(a, b))
+    def(sum(a, b), do: +(a, b))
 
-In this example, we are calling the macro `def` passing two key-value args, `sum` with value [a, b] and `do` with an expression. We may expand the `do` into a series of expressions. For that, we use additional parenthesis:
+In this example, we are calling the macro `def` passing two arguments: a function call expressions (`sum` with values `a` and `b`) and a key-value argument `do` with an expression. We may expand the `do` into a series of expressions. For that, we use additional parenthesis:
 
-    def(math: [a, b], do: (
+    def(math(a, b), do: (
       =(c, +(a, b))
       *(c, *(a, b))
     ))
@@ -35,7 +35,7 @@ Similarly, a function that sums two numbers is defined as:
 
 Finally, Lego also allows `;` to separate several expressions in the same line:
 
-    def(math: [a, b], do: (=(c, +(a, b)); *(c, *(a, b))))
+    def(math(a, b), do: (=(c, +(a, b)); *(c, *(a, b))))
 
 This is the basic specification of the language. So far, there are just five characters reserved by the language: `,` `(` `)` `:` `;`
 
@@ -51,14 +51,14 @@ The Lego kernel language provides several conveniences to get rid of parenthesis
 
 Lego provides operators and an operator table. For instance, the following example (already shown above):
 
-    def(math: [a, b], do: (
+    def(math(a, b), do: (
       =(c, +(a, b))
       *(c, *(a, b))
     ))
 
 Could be rewritten as:
 
-    def(math: [a, b], do: (
+    def(math(a, b), do: (
       c = a + b
       c * a * b
     ))
@@ -67,7 +67,7 @@ Lego operator table will be able to handle unary, binary and ternary operators. 
 
 Notice that an operator is not limited to only symbols. If a language wishes, `div` could be defined as a binary operator in the operator table. A practical example are guards, which could be implemented as:
 
-    def(math: [a, b] when is_number(a) and is_number(b), do: (
+    def(math(a, b) when is_number(a) and is_number(b), do: (
       c = a + b
       c * a * b
     ))
@@ -78,7 +78,7 @@ The example above could be implemented by defining `when` as a binary operator a
 
 The second convenience provided by Lego are optional parenthesis on macro/function calls. Our `math` example could now be refactored to:
 
-    def math: [a, b], do: (
+    def math(a, b), do: (
       c = a + b
       c * a * b
     )
@@ -115,14 +115,14 @@ But `+ 1, 2` isn't.
 
 The third convenience provided by Lego are key-value blocks. Key-value blocks encapsulates the common patterns in the language and allow us to provide key-value args with expressions without a need to use parenthesis. With this feature, our `math` example could be rewritten as:
 
-    def math: [a, b] do
+    def math(a, b) do
       c = a + b
       c * a * b
     end
 
 Everything marked by the newly introduced `do`/`end` keywords is passed as value in the `do:` key-value argument. This is similar to Ruby blocks. In fact, if we want to insert parenthesis, they would be inserted as follow:
 
-    def(math: [a, b]) do
+    def math(a, b) do
       c = a + b
       c * a * b
     end
