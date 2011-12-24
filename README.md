@@ -120,14 +120,7 @@ The third convenience provided by Lego are key-value blocks. Key-value blocks en
       c * a * b
     end
 
-Everything marked by the newly introduced `do`/`end` keywords is passed as value in the `do:` key-value argument. This is similar to Ruby blocks. In fact, if we want to insert parenthesis, they would be inserted as follow:
-
-    def math(a, b) do
-      c = a + b
-      c * a * b
-    end
-
-Key-value blocks become more useful when we add other keywords to the block. For example, our `if`/`else` example already shown above:
+Everything marked by the newly introduced `do`/`end` keywords is passed as value in the `do:` key-value argument. Key-value blocks become more useful when we add other keywords to the block. For example, our `if`/`else` example already shown above:
 
     if(some_variable, do: (
       invoke_some_function()
@@ -143,23 +136,27 @@ Could now be rewritten as:
       done
     end
 
-There two other features provided syntactically by key-value blocks. The first one is the ability to handle empty expressions. The second allows them to work as accumulators to duplicated key blocks. These are convenient to implement `case`/`match` (also known as `switch`/`case` and `case`/`when` in other languages):
+This is similar to Ruby blocks. In fact, if we want to insert parenthesis, they would be inserted as follow:
+
+    if(some_variable) do
+      invoke_some_function
+    else:
+      done
+    end
+
+Key-value blocks works the same as key-value args with one important difference. Key-value blocks allow multiple values for the same key. This is convenient to implement `case`/`when` (also known as `switch`/`case` in some languages):
 
     case some_var do
-    match: 0
-    match: 1
+    when: 0
+    when: 1
       puts "is zero or one"
-    match: 2
+    when: 2
       puts "is two"
-    else:
+    when:
       puts "none of above"
     end
 
-Internally, this is translated to:
-
-    case(some_var, do: (), match: [(0), (1; puts "is one"), (2; puts "is two")], else: (puts "none of above"))
-
-Finally, key-value blocks also have a shorter version via curly brackets: `{` and `}`. For example, this is how the `function` macro could be invoked:
+Finally, key-value blocks also have a shorter version via curly brackets: `{` and `}`. For example, this is how the `fn` macro could be invoked:
 
     fn(x, y){ x + y }
 
@@ -280,21 +277,6 @@ Which has similar translation as a unary operator.
 So far, we have detailed the syntax of the language and introduced conveniences. With the macro mechanism, we were able to avoid defining several keywords and with a few syntax additions, the language looks pleasant and flexible to work with.
 
 The keywords are limited to: `,` `(` `)` `:` `;` `do` `end` `{` `}`
-
-# Macros
-
-This section outlines some macros that must be shared across different Lego implementations.
-
-## Functions
-
-This specs defines two macros for functions: `function` and `fn`. The former uses the array syntax for its arguments (similar to `def`) while the latter is a shortcut syntax. Here are some examples wrapping up the possible keyword syntaxes we have seen so far:
-
-    fn(a, b) { a + b }
-    fn(a, b, do: a + b)
-    fn a, b, do: a + b
-    fn a, b do
-      a + b
-    end
 
 # BNF grammar sample
 
