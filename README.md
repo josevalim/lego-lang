@@ -156,11 +156,7 @@ Key-value blocks works the same as key-value args with one important difference.
       puts "none of above"
     end
 
-Finally, key-value blocks also have a shorter version via curly brackets: `{` and `}`. For example, this is how the `fn` macro could be invoked:
-
-    fn(x, y){ x + y }
-
-There is one fundamental difference between using `do`/`end` and `{`'/`}` as key-value blocks delimiters. When used in function calls without parenthesis, `do`/`end` always applies to the furthest function call. For instance:
+Finally, key-value blocks also have an alternative syntax as `->`/`end`. This alternate syntax is important because, while `do`/`end` binds to the farthest function call, `->`/`end` binds to the closest. For instance:
 
     foo bar do
       some_call
@@ -172,13 +168,25 @@ It is the same as:
       some_call
     end
 
-However, `{`/`}` binds to the closest one:
+However:
 
-    foo bar { some_call }
+    foo bar ->
+      some_call
+    end
 
 Which is the same as:
 
-    foo(bar { some_call })
+    foo(bar ->
+      some_call
+    end)
+
+This difference is crucial when working with functions. For example:
+
+    System.add_callback fn(state) ->
+      print state
+    end
+
+Using `do` instead `->` would likely cause an error because no implementation would be bound to the function.
 
 ## Data types
 
@@ -211,41 +219,10 @@ Which then translates to:
 
     {}(1, 2, 3)
 
-Since those are simply a macro/function call, we could implement Ruby like hashes using keyword args:
+And so forth. Since those are simply a macro/function call, we could implement Ruby like hashes using keyword args:
 
     { a: foo, b: bar }
     {}(a: foo, b: bar)
-
-Notice that, even though the Lego kernel language uses curly brackets for key-value blocks, they can also be used as containers. For that, it is important to take into account the following:
-
-    some_function { foo }
-
-In the example above, is { foo } a key-value blocks or a container with foo? The proper answer is the former. In order to obtain the latter, explicit parenthesis would be required:
-
-    some_function({ foo })
-
-Lego will provide a container table where containers could be specified. Due to conflicts, a container cannot use delimiters that are also in the operators table.
-
-#### Solving optional parenthesis and containers ambiguity
-
-If a language choses to implement an operator using curly braces, some ambiguity may appear with key-value blocks. For instance, imagine that for a given language curly brackets also represents a tuple. The following are ambiguous:
-
-    function_call { }
-    function_call { 1 + 2 }
-
-It is impossible to know if those should be translated to:
-
-    function_call do: ()
-    function_call do: 1 + 2
-
-Or:
-
-    function_call({})
-    function_call({ 1 + 2 })
-
-Therefore, the Lego specifies that it must translate to the first form. If the developer desires the second form, it could be added by the explicit use of parenthesis.
-
-Finally, note that such ambiguity can be handled accordingly by the language implementation to be uncommon. For example, it rarely makes sense to create a tuple (a contiguous space in memory) with less than two elements, so although the conflict exists in theory, it should not appear in practice. On the other hand, if a language chooses curly brackets to represent lists or arrays, the same cannot be said and ambiguity scenarios can be more frequent, making the language implementation less convenient to use.
 
 ## Parenthesis applicability
 
